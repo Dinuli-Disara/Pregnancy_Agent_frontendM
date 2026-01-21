@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "29044660842",
+    "project_id": "pregnancyagent-24de5",
+    "storage_bucket": "pregnancyagent-24de5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:29044660842:android:07aaaf12fdfba657060813",
+        "android_client_info": {
+          "package_name": "com.example.pregnancy_agent_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "29044660842-etg9kj15dfm2o4ha8qau6ag38l7pnkga.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcVe7nA_pYZOv1cDH4Wbxi-o9lU0H0LcE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "29044660842-etg9kj15dfm2o4ha8qau6ag38l7pnkga.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

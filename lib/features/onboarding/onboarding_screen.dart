@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/colors.dart';
-import '../home/home_screen.dart';
+import '../../shared/main_navigation.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -22,7 +22,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     },
     {
       'title': 'Track Health Effortlessly',
-      'description': 'Monitor symptoms, weight, hydration and more',
+      'description': 'Monitor symptoms, hydration, sleep and baby movement',
       'icon': Icons.monitor_heart,
       'color': AppColors.secondary,
     },
@@ -34,25 +34,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     },
   ];
 
+  void _goToMainApp() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const MainNavigation()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // Skip button for first 2 pages
+            // Skip Button
             if (_currentPage < _pages.length - 1)
               Align(
                 alignment: Alignment.topRight,
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(16),
                   child: TextButton(
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const HomeScreen()),
-                      );
-                    },
+                    onPressed: _goToMainApp,
                     child: Text(
                       'Skip',
                       style: TextStyle(color: AppColors.textSecondary),
@@ -60,7 +62,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
               ),
-            
+
+            // Pages
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -71,7 +74,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
                 itemCount: _pages.length,
                 itemBuilder: (context, index) {
-                  return OnboardingPage(
+                  return _OnboardingPage(
                     title: _pages[index]['title'],
                     description: _pages[index]['description'],
                     icon: _pages[index]['icon'],
@@ -80,29 +83,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
               ),
             ),
-            
-            // Page indicators
+
+            // Indicators
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
                 _pages.length,
-                (index) => Container(
+                (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
                   margin: const EdgeInsets.all(4),
-                  width: 8,
+                  width: _currentPage == index ? 12 : 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
                     color: _currentPage == index
                         ? AppColors.primary
                         : Colors.grey[300],
+                    borderRadius: BorderRadius.circular(4),
                   ),
                 ),
               ),
             ),
-            
-            // Next/Get Started button
+
+            // Button
             Padding(
-              padding: const EdgeInsets.all(32.0),
+              padding: const EdgeInsets.all(32),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -110,21 +114,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     if (_currentPage < _pages.length - 1) {
                       _pageController.nextPage(
                         duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeIn,
+                        curve: Curves.easeInOut,
                       );
                     } else {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const HomeScreen()),
-                      );
+                      _goToMainApp();
                     }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   child: Text(
                     _currentPage == _pages.length - 1
@@ -132,8 +133,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         : 'Next',
                     style: const TextStyle(
                       fontSize: 18,
+                      fontWeight: FontWeight.bold,
                       color: Colors.white,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -146,14 +147,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-class OnboardingPage extends StatelessWidget {
+class _OnboardingPage extends StatelessWidget {
   final String title;
   final String description;
   final IconData icon;
   final Color color;
 
-  const OnboardingPage({
-    super.key,
+  const _OnboardingPage({
     required this.title,
     required this.description,
     required this.icon,
@@ -163,20 +163,20 @@ class OnboardingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(32.0),
+      padding: const EdgeInsets.all(32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 200,
-            height: 200,
+            width: 180,
+            height: 180,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              color: color.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
-              size: 100,
+              size: 90,
               color: color,
             ),
           ),
@@ -185,12 +185,12 @@ class OnboardingPage extends StatelessWidget {
             title,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 26,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Text(
             description,
             textAlign: TextAlign.center,
