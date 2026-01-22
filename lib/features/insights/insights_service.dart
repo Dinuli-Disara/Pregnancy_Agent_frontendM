@@ -1,17 +1,23 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'insights_model.dart';
 
 class InsightsService {
-  static const String baseUrl = "http://127.0.0.1:8000";
+  final String baseUrl = "http://127.0.0.1:8000";
 
-  Future<Insight> fetchInsights(int userId) async {
-    final response = await http.get(
-      Uri.parse("$baseUrl/insights/$userId"),
-    );
+  Future<Map<String, dynamic>> fetchInsights(int userId) async {
+    final res = await http.get(Uri.parse("$baseUrl/insights/$userId"));
 
-    if (response.statusCode == 200) {
-      return Insight.fromJson(jsonDecode(response.body));
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+
+      // SAFETY FIX
+      return {
+        "week": data["week"] ?? 0,
+        "summary": data["summary"] ?? "No insight available",
+        "risk": data["risk"] ?? {},
+        "trends": data["trends"] ?? {},
+        "recommendations": data["recommendations"] ?? [],
+      };
     } else {
       throw Exception("Failed to load insights");
     }

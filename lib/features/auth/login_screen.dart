@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'signup_screen.dart';
 import 'auth_service.dart';
-import '../home/home_screen.dart';
 import '../navigation/main_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -24,36 +23,36 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => loading = true);
-    final success = await AuthService()
+
+    final result = await AuthService()
         .login(emailCtrl.text.trim(), passCtrl.text);
 
     setState(() => loading = false);
 
-    success
-        ? _success()
-        : _error("Login failed. User not found.");
+    if (result != null) {
+      _success();
+    } else {
+      _error("Login failed. Check email/password.");
+    }
   }
 
   void _success() {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text("Login Success ")),
-  );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Login Success")),
+    );
 
-  // Navigate to app inside after short delay
-  Future.delayed(const Duration(milliseconds: 800), () {
-    Navigator.pushReplacement(
-  context,
-  MaterialPageRoute(
-    builder: (_) => const MainNavigationScreen(),
-   ),
-  );
- });
-}
-
+    Future.delayed(const Duration(milliseconds: 400), () {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+      );
+    });
+  }
 
   void _error(String msg) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg)),
+    );
   }
 
   @override
@@ -71,39 +70,41 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  const Text("Login", style: TextStyle(fontSize: 22)),
-                  TextField(
-                    controller: emailCtrl,
-                    decoration: const InputDecoration(labelText: "Email"),
-                  ),
-                  TextField(
-                    controller: passCtrl,
-                    obscureText: obscure,
-                    decoration: InputDecoration(
-                      labelText: "Password",
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                            obscure ? Icons.visibility : Icons.visibility_off),
-                        onPressed: () =>
-                            setState(() => obscure = !obscure),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text("Login", style: TextStyle(fontSize: 22)),
+                    TextField(
+                      controller: emailCtrl,
+                      decoration: const InputDecoration(labelText: "Email"),
+                    ),
+                    TextField(
+                      controller: passCtrl,
+                      obscureText: obscure,
+                      decoration: InputDecoration(
+                        labelText: "Password",
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscure ? Icons.visibility : Icons.visibility_off,
+                          ),
+                          onPressed: () => setState(() => obscure = !obscure),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: loading ? null : _login,
-                    child: Text(loading ? "Loading..." : "Login"),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const SignupScreen()),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: loading ? null : _login,
+                      child: Text(loading ? "Loading..." : "Login"),
                     ),
-                    child: const Text("Create account"),
-                  )
-                ]),
+                    TextButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SignupScreen()),
+                      ),
+                      child: const Text("Create account"),
+                    )
+                  ],
+                ),
               ),
             ),
           ),

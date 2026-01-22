@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'insights_service.dart';
-import 'insights_model.dart';
+import 'chat_service.dart';
 
 class InsightsScreen extends StatefulWidget {
   const InsightsScreen({super.key});
@@ -10,7 +10,11 @@ class InsightsScreen extends StatefulWidget {
 }
 
 class _InsightsScreenState extends State<InsightsScreen> {
-  late Future<Insight> future;
+  late Future<Map<String, dynamic>> future;
+  final chatController = TextEditingController();
+  final List<Map<String, String>> messages = [];
+
+  int currentWeek = 1;
 
   @override
   void initState() {
@@ -18,16 +22,27 @@ class _InsightsScreenState extends State<InsightsScreen> {
     future = InsightsService().fetchInsights(1);
   }
 
+  Future<void> sendChat() async {
+    final question = chatController.text.trim();
+    if (question.isEmpty) return;
+
+    setState(() {
+      messages.add({"sender": "user", "text": question});
+      chatController.clear();
+    });
+
+    final reply = await ChatService().sendMessage(question, currentWeek);
+
+    setState(() {
+      messages.add({"sender": "bot", "text": reply});
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F4FB),
-      appBar: AppBar(
-        title: const Text("AI Insights"),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
-      ),
-      body: FutureBuilder<Insight>(
+      appBar: AppBar(title: const Text("AI Pregnancy Insights")),
+      body: FutureBuilder<Map<String, dynamic>>(
         future: future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -35,21 +50,38 @@ class _InsightsScreenState extends State<InsightsScreen> {
           }
 
           if (snapshot.hasError) {
-            return const Center(child: Text("Failed to load insights"));
+            return Center(child: Text("Error: ${snapshot.error}"));
           }
 
-          final insight = snapshot.data!;
+          final data = snapshot.data!;
+          currentWeek = data["week"] ?? 1;
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          return Column(
             children: [
-              _summaryCard(insight.summary),
-              const SizedBox(height: 16),
-              _riskCard(insight),
-              const SizedBox(height: 16),
-              _trendCard(insight),
-              const SizedBox(height: 16),
-              _recommendationCard(insight.recommendations),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(12),
+                  children: [
+                    _card("Week", data["week"].toString(), Colors.pink),
+                    _card("Summary", data["summary"], Colors.blue),
+                    _card("Risk", data["risk"].toString(), Colors.red),
+                    _card("Trends", data["trends"].toString(), Colors.green),
+                    _card("Recommendations",
+                        (data["recommendations"] as List).join("\n• "),
+                        Colors.purple),
+
+                    const SizedBox(height: 20),
+                    const Text("AI Chat Assistant",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+
+                    ...messages.map((m) => _chatBubble(m["text"]!, m["sender"]!)),
+                    const SizedBox(height: 80),
+                  ],
+                ),
+              ),
+
+              _chatInput(),
             ],
           );
         },
@@ -57,143 +89,63 @@ class _InsightsScreenState extends State<InsightsScreen> {
     );
   }
 
-  // 🌸 SUMMARY
-  Widget _summaryCard(String text) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF9D50BB), Color(0xFF6E48AA)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Daily Health Summary",
-            style: TextStyle(color: Colors.white, fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 🚨 RISK
-  Widget _riskCard(Insight i) {
-    return _card(
-      "Risk Assessment",
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _statusChip("Dehydration", i.dehydration),
-          _statusChip("Fatigue", i.fatigue),
-        ],
-      ),
-    );
-  }
-
-  // 📊 TRENDS
-  Widget _trendCard(Insight i) {
-    return _card(
-      "Health Trends",
-      Column(
-        children: [
-          _trendRow(Icons.water_drop, "Hydration", i.hydrationTrend),
-          _trendRow(Icons.bedtime, "Sleep", i.sleepTrend),
-          _trendRow(Icons.favorite, "Baby Movement", i.babyMovementTrend),
-        ],
-      ),
-    );
-  }
-
-  // 💡 AI RECOMMENDATIONS
-  Widget _recommendationCard(List<String> recs) {
-    return _card(
-      "AI Recommendations",
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: recs
-            .map(
-              (r) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: const [
-                    Icon(Icons.check_circle, color: Colors.green, size: 18),
-                    SizedBox(width: 8),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
-      ),
-    );
-  }
-
-  // 🧱 COMMON CARD
-  Widget _card(String title, Widget child) {
+  Widget _card(String title, String content, Color color) {
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: color.withOpacity(0.1),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            child,
+            Text(title,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 5),
+            Text(content),
           ],
         ),
       ),
     );
   }
 
-  // 🔘 CHIP
-  Widget _statusChip(String label, String value) {
-    Color color =
-        value == "Low" ? Colors.green : value == "Medium" ? Colors.orange : Colors.red;
+  Widget _chatBubble(String text, String sender) {
+    final isUser = sender == "user";
 
-    return Column(
-      children: [
-        Text(label),
-        const SizedBox(height: 4),
-        Chip(
-          label: Text(value),
-          backgroundColor: color.withOpacity(0.15),
-          labelStyle: TextStyle(color: color),
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isUser ? Colors.pinkAccent : Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(12),
         ),
-      ],
+        child: Text(
+          text,
+          style: TextStyle(color: isUser ? Colors.white : Colors.black),
+        ),
+      ),
     );
   }
 
-  // ➖ ROW
-  Widget _trendRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+  Widget _chatInput() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      color: Colors.white,
       child: Row(
         children: [
-          Icon(icon, color: Colors.deepPurple),
+          Expanded(
+            child: TextField(
+              controller: chatController,
+              decoration: const InputDecoration(
+                hintText: "Ask about pregnancy...",
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
           const SizedBox(width: 8),
-          Expanded(child: Text(label)),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          IconButton(
+            icon: const Icon(Icons.send, color: Colors.pink),
+            onPressed: sendChat,
           ),
         ],
       ),

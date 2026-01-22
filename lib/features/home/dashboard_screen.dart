@@ -1,10 +1,81 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/colors.dart';
-import '../../shared/widgets/expandable_card.dart';
-import '../../shared/widgets/quick_action_button.dart';
+import '../../shared/session/user_session.dart';
+import '../insights/insights_service.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  String fullName = "User";
+  int week = 1;
+  String trimester = "First Trimester";
+  String babySize = "—";
+  Future<Map<String, dynamic>>? insightFuture;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ✅ load user name from session
+    final name = UserSession.fullName;
+    if (name != null && name.trim().isNotEmpty) {
+      fullName = name;
+    }
+
+    // ✅ load AI summary using real userId
+    final userId = UserSession.userId;
+    if (userId != null) {
+      insightFuture = InsightsService().fetchInsights(userId);
+      _loadWeekAndComputeUI(userId);
+    }
+  }
+
+  // Reads week from insights response (which comes from DB pregnancy.current_week)
+  Future<void> _loadWeekAndComputeUI(int userId) async {
+    try {
+      final data = await InsightsService().fetchInsights(userId);
+
+      // your backend currently returns trends/risk/recommendations/summary only
+      // we’ll infer week using a key IF you add it. For now, fallback week=16 (demo)
+      // ✅ BEST: modify backend insights.py to return "week": pregnancy.current_week
+      final serverWeek = data["week"];
+      if (serverWeek != null) {
+        week = int.tryParse(serverWeek.toString()) ?? week;
+      } else {
+        // fallback if week not returned by backend
+        week = 16;
+      }
+
+      trimester = _getTrimester(week);
+      babySize = _getBabySize(week);
+
+      setState(() {});
+    } catch (_) {}
+  }
+
+  String _getTrimester(int w) {
+    if (w <= 12) return "First Trimester";
+    if (w <= 27) return "Second Trimester";
+    return "Third Trimester";
+  }
+
+  String _getBabySize(int w) {
+    // Simple mapping (good enough for demo)
+    if (w <= 8) return "Blueberry 🫐";
+    if (w <= 12) return "Lime 🍋";
+    if (w <= 16) return "Avocado 🥑";
+    if (w <= 20) return "Banana 🍌";
+    if (w <= 24) return "Corn 🌽";
+    if (w <= 28) return "Eggplant 🍆";
+    if (w <= 32) return "Coconut 🥥";
+    if (w <= 36) return "Papaya 🍈";
+    return "Watermelon 🍉";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,8 +86,8 @@ class DashboardScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 20),
-            
-            // Welcome Section
+
+            // ✅ Welcome Section
             Row(
               children: [
                 CircleAvatar(
@@ -40,7 +111,7 @@ class DashboardScreen extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Sarah Johnson',
+                      fullName,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -51,10 +122,10 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 20),
-            
-            // Pregnancy Week Card
+
+            // ✅ Pregnancy Week Card (dynamic)
             Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -78,7 +149,7 @@ class DashboardScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Week 16',
+                            'Week $week',
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -86,7 +157,7 @@ class DashboardScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            'Second Trimester',
+                            trimester,
                             style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 14,
@@ -94,7 +165,7 @@ class DashboardScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 5),
                           Text(
-                            'Baby size: Avocado 🥑',
+                            'Baby size: $babySize',
                             style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 16,
@@ -107,291 +178,83 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 20),
-            
-            // Daily AI Summary Card
-            ExpandableCard(
-              title: 'Daily AI Health Summary',
-              icon: Icons.health_and_safety,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'All vital signs are within normal range for week 16.',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildStatusIndicator('Hydration', 0.8, AppColors.success),
-                      _buildStatusIndicator('Nutrition', 0.9, AppColors.success),
-                      _buildStatusIndicator('Rest', 0.6, AppColors.warning),
-                      _buildStatusIndicator('Activity', 0.7, AppColors.success),
-                    ],
-                  ),
-                  const SizedBox(height: 15),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.lightbulb, color: AppColors.accent),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'AI Tip: Remember to drink at least 8 glasses of water today.',
-                            style: TextStyle(color: AppColors.textSecondary),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Water Intake Card
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Water Intake Today',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          '4/8 cups',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.accent,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 15),
-                    LinearProgressIndicator(
-                      value: 0.5,
-                      backgroundColor: Colors.grey[200],
-                      color: AppColors.accent,
-                      borderRadius: BorderRadius.circular(10),
-                      minHeight: 12,
-                    ),
-                    const SizedBox(height: 15),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _waterCupButton('+1', 1),
-                        _waterCupButton('+2', 2),
-                        _waterCupButton('+4', 4),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Next Appointment Card
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: AppColors.secondary.withOpacity(0.2),
-                          radius: 20,
-                          child: Icon(
-                            Icons.calendar_today,
-                            color: AppColors.secondary,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Next Appointment',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 15),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            'Tomorrow, 2:00 PM',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Dr. Smith - Ultrasound Scan',
-                            style: TextStyle(color: AppColors.textSecondary),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 25),
-            
-            // Quick Actions Section
+
+            // ✅ Daily AI Summary from backend
             Text(
-              'Quick Actions',
+              "Daily AI Health Summary",
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 15),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              childAspectRatio: 2.2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              children: [
-                QuickActionButton(
-                  icon: Icons.water_drop,
-                  label: 'Log Water',
-                  color: AppColors.accent,
-                  onTap: () {},
-                ),
-                QuickActionButton(
-                  icon: Icons.monitor_heart,
-                  label: 'Log Symptoms',
-                  color: AppColors.secondary,
-                  onTap: () {},
-                ),
-                QuickActionButton(
-                  icon: Icons.restaurant,
-                  label: 'Log Meal',
-                  color: Colors.orange,
-                  onTap: () {},
-                ),
-                QuickActionButton(
-                  icon: Icons.summarize,
-                  label: 'Weekly Report',
-                  color: AppColors.primary,
-                  onTap: () {},
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 40), // Bottom padding
-          ],
-        ),
-      ),
-    );
-  }
+            const SizedBox(height: 10),
 
-  Widget _buildStatusIndicator(String label, double value, Color color) {
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 50,
-              height: 50,
-              child: CircularProgressIndicator(
-                value: value,
-                color: color,
-                backgroundColor: Colors.grey[200],
-                strokeWidth: 4,
-              ),
-            ),
-            Text(
-              '${(value * 100).toInt()}%',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 5),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
+            FutureBuilder<Map<String, dynamic>>(
+              future: insightFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError || !snapshot.hasData) {
+                  return Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text("Could not load AI summary"),
+                    ),
+                  );
+                }
 
-  Widget _waterCupButton(String label, int cups) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 5),
-        child: ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.accent,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+                final data = snapshot.data!;
+                final summary = (data["summary"] ?? "No summary").toString();
+
+                final recs = (data["recommendations"] is List)
+                    ? (data["recommendations"] as List)
+                    : [];
+
+                return Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          summary,
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (recs.isNotEmpty) ...[
+                          Text(
+                            "Recommendations",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ...recs.take(3).map((r) => Text("• $r")).toList(),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
+
+            // ✅ Quick Actions removed completely ✅
+            const SizedBox(height: 40),
+          ],
         ),
       ),
     );
