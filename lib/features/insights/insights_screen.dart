@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/colors.dart';
-import 'insight_service.dart';
-import 'insight_model.dart';
+import 'insights_service.dart';
+import 'insights_model.dart';
 
 class InsightsScreen extends StatefulWidget {
   const InsightsScreen({super.key});
@@ -11,257 +10,190 @@ class InsightsScreen extends StatefulWidget {
 }
 
 class _InsightsScreenState extends State<InsightsScreen> {
-  late Future<Insight> _insightFuture;
+  late Future<Insight> future;
 
   @override
   void initState() {
     super.initState();
-    _insightFuture = InsightService.fetchInsights(1); // TEMP userId
+    future = InsightsService().fetchInsights(1);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F4FB),
       appBar: AppBar(
-        title: const Text('AI Insights'),
-        backgroundColor: AppColors.primary,
+        title: const Text("AI Insights"),
+        backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
       body: FutureBuilder<Insight>(
-        future: _insightFuture,
+        future: future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
-            return const Center(child: Text('Error loading insights'));
+            return const Center(child: Text("Failed to load insights"));
           }
 
           final insight = snapshot.data!;
 
-          return SingleChildScrollView(
+          return ListView(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-
-                /// 🔹 Daily AI Summary
-                _InsightCard(
-                  title: 'Daily Health Summary',
-                  icon: Icons.psychology,
-                  color: AppColors.primary,
-                  child: Text(
-                    insight.summary,
-                    style: const TextStyle(fontSize: 15),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                /// 🔹 Risk Assessment
-                _InsightCard(
-                  title: 'Risk Assessment',
-                  icon: Icons.warning_amber,
-                  color: Colors.orange,
-                  child: Row(
-                    children: [
-                      _RiskChip(
-                        label: 'Dehydration',
-                        level: insight.dehydration,
-                      ),
-                      const SizedBox(width: 10),
-                      _RiskChip(
-                        label: 'Fatigue',
-                        level: insight.fatigue,
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                /// 🔹 Health Trends
-                _InsightCard(
-                  title: 'Health Trends',
-                  icon: Icons.show_chart,
-                  color: Colors.teal,
-                  child: Column(
-                    children: [
-                      _TrendRow(
-                        title: 'Hydration',
-                        value: insight.hydrationTrend,
-                      ),
-                      _TrendRow(
-                        title: 'Sleep',
-                        value: insight.sleepTrend,
-                      ),
-                      _TrendRow(
-                        title: 'Baby Movement',
-                        value: insight.babyMovementTrend,
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                /// 🔹 AI Recommendations
-                _InsightCard(
-                  title: 'AI Recommendations',
-                  icon: Icons.lightbulb,
-                  color: Colors.green,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: insight.recommendations
-                        .map(
-                          (r) => Padding(
-                            padding: const EdgeInsets.only(bottom: 6),
-                            child: Text('• $r'),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                /// 🔹 Action Buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.chat),
-                        label: const Text('Ask AI'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        onPressed: () {
-                          // TODO: Navigate to AI Chat
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.history),
-                        label: const Text('View History'),
-                        style: OutlinedButton.styleFrom(
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        onPressed: () {
-                          // TODO: Navigate to history
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+            children: [
+              _summaryCard(insight.summary),
+              const SizedBox(height: 16),
+              _riskCard(insight),
+              const SizedBox(height: 16),
+              _trendCard(insight),
+              const SizedBox(height: 16),
+              _recommendationCard(insight.recommendations),
+            ],
           );
         },
       ),
     );
   }
-}
 
-///////////////////////////////////////////////////////////
-/// 🔸 Reusable Widgets (UNCHANGED)
-///////////////////////////////////////////////////////////
-
-class _InsightCard extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final Color color;
-  final Widget child;
-
-  const _InsightCard({
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  // 🌸 SUMMARY
+  Widget _summaryCard(String text) {
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        gradient: const LinearGradient(
+          colors: [Color(0xFF9D50BB), Color(0xFF6E48AA)],
+        ),
+        borderRadius: BorderRadius.circular(16),
       ),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, color: color),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+          const Text(
+            "Daily Health Summary",
+            style: TextStyle(color: Colors.white, fontSize: 16),
           ),
-          const SizedBox(height: 12),
-          child,
+          const SizedBox(height: 8),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
   }
-}
 
-class _RiskChip extends StatelessWidget {
-  final String label;
-  final String level;
-
-  const _RiskChip({required this.label, required this.level});
-
-  @override
-  Widget build(BuildContext context) {
-    Color color = level == 'High'
-        ? Colors.red
-        : level == 'Medium'
-            ? Colors.orange
-            : Colors.green;
-
-    return Chip(
-      label: Text('$label: $level'),
-      backgroundColor: color.withOpacity(0.15),
-      labelStyle: TextStyle(color: color),
+  // 🚨 RISK
+  Widget _riskCard(Insight i) {
+    return _card(
+      "Risk Assessment",
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _statusChip("Dehydration", i.dehydration),
+          _statusChip("Fatigue", i.fatigue),
+        ],
+      ),
     );
   }
-}
 
-class _TrendRow extends StatelessWidget {
-  final String title;
-  final String value;
+  // 📊 TRENDS
+  Widget _trendCard(Insight i) {
+    return _card(
+      "Health Trends",
+      Column(
+        children: [
+          _trendRow(Icons.water_drop, "Hydration", i.hydrationTrend),
+          _trendRow(Icons.bedtime, "Sleep", i.sleepTrend),
+          _trendRow(Icons.favorite, "Baby Movement", i.babyMovementTrend),
+        ],
+      ),
+    );
+  }
 
-  const _TrendRow({required this.title, required this.value});
+  // 💡 AI RECOMMENDATIONS
+  Widget _recommendationCard(List<String> recs) {
+    return _card(
+      "AI Recommendations",
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: recs
+            .map(
+              (r) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: const [
+                    Icon(Icons.check_circle, color: Colors.green, size: 18),
+                    SizedBox(width: 8),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
+  // 🧱 COMMON CARD
+  Widget _card(String title, Widget child) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🔘 CHIP
+  Widget _statusChip(String label, String value) {
+    Color color =
+        value == "Low" ? Colors.green : value == "Medium" ? Colors.orange : Colors.red;
+
+    return Column(
+      children: [
+        Text(label),
+        const SizedBox(height: 4),
+        Chip(
+          label: Text(value),
+          backgroundColor: color.withOpacity(0.15),
+          labelStyle: TextStyle(color: color),
+        ),
+      ],
+    );
+  }
+
+  // ➖ ROW
+  Widget _trendRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title),
+          Icon(icon, color: Colors.deepPurple),
+          const SizedBox(width: 8),
+          Expanded(child: Text(label)),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
       ),

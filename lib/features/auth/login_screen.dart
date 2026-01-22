@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'signup_screen.dart';
 import 'auth_service.dart';
+import '../home/home_screen.dart';
+import '../navigation/main_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -33,9 +35,21 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _success() {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text("Login Success 🎉")));
-  }
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("Login Success ")),
+  );
+
+  // Navigate to app inside after short delay
+  Future.delayed(const Duration(milliseconds: 800), () {
+    Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(
+    builder: (_) => const MainNavigationScreen(),
+   ),
+  );
+ });
+}
+
 
   void _error(String msg) {
     ScaffoldMessenger.of(context)

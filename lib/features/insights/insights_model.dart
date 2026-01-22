@@ -20,11 +20,11 @@ class Insight {
   factory Insight.fromJson(Map<String, dynamic> json) {
     return Insight(
       summary: json['summary'] ?? 'No summary available',
-      dehydration: json['dehydration'] ?? 'Low',
-      fatigue: json['fatigue'] ?? 'Low',
-      hydrationTrend: json['hydration_trend'] ?? 'Stable',
-      sleepTrend: json['sleep_trend'] ?? 'Stable',
-      babyMovementTrend: json['baby_movement_trend'] ?? 'Stable',
+      dehydration: json['risk']?['dehydration'] ?? 'Low',
+      fatigue: json['risk']?['fatigue'] ?? 'Low',
+      hydrationTrend: json['trends']?['hydration'] ?? 'Stable',
+      sleepTrend: json['trends']?['sleep'] ?? 'Stable',
+      babyMovementTrend: json['trends']?['baby_movement'] ?? 'Stable',
       recommendations:
           (json['recommendations'] as List<dynamic>?)
                   ?.map((e) => e.toString())
