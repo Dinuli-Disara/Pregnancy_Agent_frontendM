@@ -10,16 +10,17 @@ class InsightsService {
     if (res.statusCode == 200) {
       final data = jsonDecode(res.body);
 
-      // SAFETY FIX
       return {
         "week": data["week"] ?? 0,
         "summary": data["summary"] ?? "No insight available",
         "risk": data["risk"] ?? {},
         "trends": data["trends"] ?? {},
-        "recommendations": data["recommendations"] ?? [],
+        "recommendations": (data["recommendations"] is List)
+            ? data["recommendations"]
+            : [],
       };
     } else {
-      throw Exception("Failed to load insights");
+      throw Exception("Failed to load insights: ${res.statusCode}");
     }
   }
 }

@@ -6,7 +6,7 @@ class AppColors {
   static const Color secondary = Color(0xFFE1BEE7); // Lavender
   static const Color accent = Color(0xFFB2DFDB);    // Mint
   static const Color peach = Color(0xFFFFCCBC);     // Light peach
-  
+  static const Color blue = Color(0xFF8FC9E3);      // Soft blue
   // Background Colors
   static const Color background = Color(0xFFFAF8F9);
   static const Color cardBackground = Color(0xFFFFFFFF);
