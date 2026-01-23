@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/colors.dart';
+import '../../shared/session/user_session.dart';
+import 'tracker_service.dart';
 
 class TrackerScreen extends StatefulWidget {
   const TrackerScreen({super.key});
@@ -118,22 +120,20 @@ class _TrackerScreenState extends State<TrackerScreen> {
                           const SizedBox(width: 24),
                           _buildControlButton(
                             icon: Icons.add,
-                            onPressed: () {
-                              setState(() => waterGlasses++);
-                            },
+                            onPressed: () => setState(() => waterGlasses++),
                           ),
                         ],
                       ),
                       const SizedBox(height: 16),
                       LinearProgressIndicator(
-                        value: waterGlasses / 8,
+                        value: (waterGlasses / 8).clamp(0, 1),
                         backgroundColor: Colors.blue.shade100,
                         color: Colors.blue,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${((waterGlasses / 8) * 100).toInt()}% of daily goal',
+                        '${((waterGlasses / 8) * 100).clamp(0, 100).toInt()}% of daily goal',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
@@ -156,7 +156,7 @@ class _TrackerScreenState extends State<TrackerScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.bedtime,
                             color: Colors.purple,
                             size: 40,
@@ -174,7 +174,9 @@ class _TrackerScreenState extends State<TrackerScreen> {
                                 ),
                               ),
                               Text(
-                                sleepHours >= 7 ? 'Good sleep!' : 'Aim for 7+ hours',
+                                sleepHours >= 7
+                                    ? 'Good sleep!'
+                                    : 'Aim for 7+ hours',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.purple.shade700,
@@ -205,9 +207,8 @@ class _TrackerScreenState extends State<TrackerScreen> {
                           max: 12,
                           divisions: 24,
                           label: '${sleepHours.toStringAsFixed(1)} hours',
-                          onChanged: (value) {
-                            setState(() => sleepHours = value);
-                          },
+                          onChanged: (value) =>
+                              setState(() => sleepHours = value),
                         ),
                       ),
                     ],
@@ -230,9 +231,7 @@ class _TrackerScreenState extends State<TrackerScreen> {
                           _buildControlButton(
                             icon: Icons.remove,
                             onPressed: () {
-                              if (kicks > 0) {
-                                setState(() => kicks--);
-                              }
+                              if (kicks > 0) setState(() => kicks--);
                             },
                           ),
                           const SizedBox(width: 32),
@@ -258,9 +257,7 @@ class _TrackerScreenState extends State<TrackerScreen> {
                           const SizedBox(width: 32),
                           _buildControlButton(
                             icon: Icons.add,
-                            onPressed: () {
-                              setState(() => kicks++);
-                            },
+                            onPressed: () => setState(() => kicks++),
                           ),
                         ],
                       ),
@@ -269,7 +266,7 @@ class _TrackerScreenState extends State<TrackerScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.check_circle,
                               color: Colors.green,
                               size: 16,
@@ -290,7 +287,7 @@ class _TrackerScreenState extends State<TrackerScreen> {
 
                 const SizedBox(height: 24),
 
-                // Symptoms Section - Clean text-only version
+                // Symptoms Section
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -311,20 +308,21 @@ class _TrackerScreenState extends State<TrackerScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    
-                    // Clean text-only symptom pills
                     Wrap(
                       spacing: 12,
                       runSpacing: 12,
                       children: symptoms.map((symptom) {
-                        final isSelected = selectedSymptoms.contains(symptom['name']);
+                        final name = symptom['name'] as String;
+                        final color = symptom['color'] as Color;
+                        final isSelected = selectedSymptoms.contains(name);
+
                         return GestureDetector(
                           onTap: () {
                             setState(() {
                               if (isSelected) {
-                                selectedSymptoms.remove(symptom['name']);
+                                selectedSymptoms.remove(name);
                               } else {
-                                selectedSymptoms.add(symptom['name']);
+                                selectedSymptoms.add(name);
                               }
                             });
                           },
@@ -334,42 +332,42 @@ class _TrackerScreenState extends State<TrackerScreen> {
                               vertical: 12,
                             ),
                             decoration: BoxDecoration(
-                              color: isSelected 
-                                ? symptom['color'] as Color
-                                : Colors.grey.shade100,
+                              color:
+                                  isSelected ? color : Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: isSelected 
-                                  ? (symptom['color'] as Color).withOpacity(0.5)
-                                  : Colors.grey.shade300,
+                                color: isSelected
+                                    ? color.withOpacity(0.5)
+                                    : Colors.grey.shade300,
                                 width: 1,
                               ),
-                              boxShadow: isSelected 
-                                ? [
-                                    BoxShadow(
-                                      color: (symptom['color'] as Color).withOpacity(0.3),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : [],
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: color.withOpacity(0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : [],
                             ),
                             child: Text(
-                              symptom['name'],
+                              name,
                               style: TextStyle(
                                 fontSize: 14,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                color: isSelected ? Colors.white : AppColors.textPrimary,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
                               ),
                             ),
                           ),
                         );
                       }).toList(),
                     ),
-                    
                     const SizedBox(height: 24),
-                    
-                    // Selected symptoms summary
                     if (selectedSymptoms.isNotEmpty)
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -418,15 +416,12 @@ class _TrackerScreenState extends State<TrackerScreen> {
                       elevation: 0,
                       shadowColor: Colors.transparent,
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.save,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
+                        Icon(Icons.save, color: Colors.white),
+                        SizedBox(width: 12),
+                        Text(
                           'Save Today\'s Data',
                           style: TextStyle(
                             fontSize: 18,
@@ -440,47 +435,6 @@ class _TrackerScreenState extends State<TrackerScreen> {
                 ),
 
                 const SizedBox(height: 20),
-
-                // Stats Summary
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.1),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildStatItem(
-                        value: waterGlasses.toString(),
-                        label: 'Water',
-                        icon: Icons.water_drop,
-                        color: Colors.blue,
-                      ),
-                      _buildStatItem(
-                        value: sleepHours.toStringAsFixed(1),
-                        label: 'Sleep',
-                        icon: Icons.bedtime,
-                        color: Colors.purple,
-                      ),
-                      _buildStatItem(
-                        value: kicks.toString(),
-                        label: 'Kicks',
-                        icon: Icons.favorite,
-                        color: Colors.pink,
-                      ),
-                      _buildStatItem(
-                        value: selectedSymptoms.length.toString(),
-                        label: 'Symptoms',
-                        icon: Icons.health_and_safety,
-                        color: Colors.orange,
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
@@ -575,57 +529,35 @@ class _TrackerScreenState extends State<TrackerScreen> {
     );
   }
 
-  Widget _buildStatItem({
-    required String value,
-    required String label,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _saveData() {
-    debugPrint('Water: $waterGlasses glasses');
-    debugPrint('Sleep: $sleepHours hours');
-    debugPrint('Kicks: $kicks kicks');
-    debugPrint('Symptoms: $selectedSymptoms');
+  Future<void> _saveData() async {
+    final userId = UserSession.userId;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("User not logged in")),
+      );
+      return;
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Daily data saved successfully!'),
+        content: const Text("Saving..."),
         backgroundColor: AppColors.primary,
+      ),
+    );
+
+    final success = await TrackerService().saveTracker(
+      userId: userId,
+      waterGlasses: waterGlasses,
+      sleepHours: sleepHours,
+      kicks: kicks,
+      symptoms: selectedSymptoms.toList(),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success ? "Saved ✅" : "Save failed ❌"),
+        backgroundColor: success ? Colors.green : Colors.red,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
       ),
     );
   }
